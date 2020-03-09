@@ -1,0 +1,54 @@
+name: md5example
+base: core18 
+version: '0.1'
+summary: The conan getting started example, snap
+description: |
+    https://docs.conan.io/en/latest/getting_started.html - snapped
+    Once installed, run the md5 example as
+ 
+    md5example.md5-launch 
+
+grade: devel 
+
+confinement: devmode 
+
+apps:
+  md5-launch:
+    environment:
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/usr/lib/
+    command: bin/md5
+
+parts:
+  mymd5:
+    plugin: dump
+    build-packages: [cmake, g++, python3-pip]
+    source: https://github.com/conan-io/examples.git
+
+    override-build: |
+      mkdir -pv $SNAPCRAFT_PART_INSTALL/bin
+      mkdir -pv $SNAPCRAFT_PART_INSTALL/usr/lib/
+      
+      cd libraries/poco/md5/
+      rm -rf build 
+      mkdir build
+      cd build
+
+      pip3 install conan
+      conan profile new default --detect --force
+      conan profile update settings.compiler.libcxx=libstdc++11 default
+      conan install .. -g deploy
+      cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/ -G "Unix Makefiles"
+      cmake --build .
+
+      cp -a bin $SNAPCRAFT_PART_INSTALL/
+      cp -ar zlib $SNAPCRAFT_PART_INSTALL/usr/lib/
+      cp -ar openssl $SNAPCRAFT_PART_INSTALL/usr/lib/
+      cp -ar poco $SNAPCRAFT_PART_INSTALL/usr/lib/
+      
+    stage:
+      - bin/
+      - usr/
+
+    prime:
+      - bin/
+      - usr/
